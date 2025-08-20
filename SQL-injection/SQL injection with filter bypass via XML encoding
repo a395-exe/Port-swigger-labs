@@ -1,0 +1,74 @@
+1. Identify the vulnerability
+
+The lab has a stock check feature where requests are sent in XML format.
+
+Inside this request, you see two parameters:
+
+<productId>
+
+<storeId>
+
+You can modify these values to test if the application is vulnerable.
+
+👉 Example test: Change
+
+<storeId>1</storeId>
+
+
+to
+
+<storeId>1+1</storeId>
+
+
+If the server actually evaluates this, you’ll see the stock results from another store ID.
+This proves that your input is being executed as part of a SQL query → confirming the injection point.
+
+2. Testing with UNION injection
+
+Next, try extending the query with a UNION SELECT statement:
+
+<storeId>1 UNION SELECT NULL</storeId>
+
+
+Normally, this is how you would find out the number of columns in the query.
+
+But in this lab, the request is blocked by a WAF (Web Application Firewall).
+
+That means any direct SQL keywords like UNION or SELECT are filtered.
+
+3. Bypassing the WAF
+
+Since the request is XML-based, you can take advantage of XML entity encoding.
+
+Using the Hackvertor extension in Burp Suite, you can encode your payload.
+
+Highlight the injection part → Right-click → Extensions > Hackvertor > Encode > dec_entities/hex_entities.
+
+This changes the payload into an encoded version that looks different to the WAF, but is still decoded by the backend before execution.
+
+👉 After encoding, you send the same request again.
+
+This time, the application responds normally → meaning your payload reached the database, and the WAF was bypassed successfully. ✅
+
+4. Crafting the final exploit
+
+From your tests, you find out that the original query only returns one column.
+
+If you try more than one column, the result breaks (stock shows as 0 units).
+
+So you must fetch both username and password in one column.
+
+Use string concatenation with a separator (like ~):
+
+<storeId><@hex_entities>1 UNION SELECT username || '~' || password FROM users</@hex_entities></storeId>
+
+
+After sending this payload, the response will now show usernames and passwords joined together (example: administrator~mypassword).
+
+5. Logging in
+
+Take the administrator credentials you retrieved.
+
+Go back to the login page of the lab.
+
+Enter the credentials → You log in as admin → ✅ Lab solved.
