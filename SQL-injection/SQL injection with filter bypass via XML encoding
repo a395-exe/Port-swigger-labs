@@ -29,7 +29,8 @@ Next, try extending the query with a UNION SELECT statement:
 
 <storeId>1 UNION SELECT NULL</storeId>
 
-![Image Description](../../Screenshots/image1.png)
+![Image Description](../Screenshots/image1.png)
+
 
 
 Normally, this is how you would find out the number of columns in the query.
