@@ -1,0 +1,40 @@
+Lab: DOM XSS in innerHTML sink using source location.search
+📌 Lab Level: Apprentice
+📝 Description
+
+This lab contains a DOM-based cross-site scripting vulnerability in the blog search functionality. The application uses JavaScript’s innerHTML to insert unsanitized input from location.search directly into the page, making it vulnerable to XSS.
+
+🎯 Goal
+
+Exploit the vulnerability to trigger an alert() popup.
+
+🔎 Analysis
+
+The application takes user-controlled input from the search box (via location.search)
+
+This value is written directly into the page using innerHTML
+
+Since there’s no input sanitization or encoding, injecting malicious HTML/JS code becomes possible
+
+💻 Exploitation
+
+Go to the search box in the blog.
+
+Enter the following payload:
+
+<img src=1 onerror=alert(1)>
+
+
+Click Search.
+
+The invalid image source (src=1) causes an error.
+
+The onerror event is triggered.
+
+alert(1) is executed, proving XSS.
+
+✅ Result
+
+The alert popup was successfully triggered.
+
+This confirms DOM XSS via innerHTML sink.
